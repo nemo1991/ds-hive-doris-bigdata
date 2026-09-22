@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml-stylesheet type="type/xsl" href="configuration.xsl"?>
+<configuration>
+  <!-- 1. 连接 Metastore 地址 -->
+  <property>
+    <name>hive.metastore.uris</name>
+    <value>thrift://hive-metastore:9083</value>
+  </property>
+
+  <!-- 2. 核心修复：禁用 Tez 引擎及默认 Session 初始化，防止无 YARN 环境下卡死 -->
+  <property>
+    <name>hive.execution.engine</name>
+    <value>mr</value>
+  </property>
+  <property>
+    <name>hive.server2.tez.initialize.default.sessions</name>
+    <value>false</value>
+  </property>
+
+  <!-- 3. Docker 环境关键：禁用用户模拟 -->
+  <property>
+    <name>hive.server2.enable.doAs</name>
+    <value>false</value>
+  </property>
+
+  <!-- 4. 绑定 10000 端口 -->
+  <property>
+    <name>hive.server2.thrift.bind.host</name>
+    <value>0.0.0.0</value>
+  </property>
+  <property>
+    <name>hive.server2.thrift.port</name>
+    <value>10000</value>
+  </property>
+
+  <!-- 5. 开启 Web UI 端口 (10002) -->
+  <property>
+    <name>hive.server2.webui.enabled</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>hive.server2.webui.host</name>
+    <value>0.0.0.0</value>
+  </property>
+  <property>
+    <name>hive.server2.webui.port</name>
+    <value>10002</value>
+  </property>
+  <property>
+  <name>hive.notification.event.poll.interval</name>
+  <value>0ms</value>
+</property>
+</configuration>
