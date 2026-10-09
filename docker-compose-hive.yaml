@@ -1,0 +1,69 @@
+services:
+  metastore-postgres:
+    image: crpi-sd251gdf7qgra3xz.cn-hangzhou.personal.cr.aliyuncs.com/tiarea/postgres:16
+    container_name: metastore-postgres
+    hostname: metastore-postgres
+    environment:
+      POSTGRES_DB: metastore_db
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive-metastore-pwd
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - hive-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive -d metastore_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  metastore:
+    image: crpi-sd251gdf7qgra3xz.cn-hangzhou.personal.cr.aliyuncs.com/tiarea/hive:4.2.1
+    container_name: metastore
+    hostname: metastore
+    depends_on:
+      metastore-postgres:
+        condition: service_healthy
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres
+      SERVICE_OPTS: >-
+        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
+        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://metastore-postgres:5432/metastore_db
+        -Djavax.jdo.option.ConnectionUserName=hive
+        -Djavax.jdo.option.ConnectionPassword=hive-metastore-pwd
+    ports:
+      - "9083:9083"
+    volumes:
+      - hive-warehouse:/opt/hive/data/warehouse
+      - ./postgresql-42.6.2.jar:/opt/hive/lib/postgresql-42.6.2.jar
+    networks:
+      - hive-net
+
+  hiveserver2:
+    image: crpi-sd251gdf7qgra3xz.cn-hangzhou.personal.cr.aliyuncs.com/tiarea/hive:4.2.1
+    container_name: hiveserver2
+    hostname: hiveserver2
+    depends_on:
+      - metastore
+    environment:
+      SERVICE_NAME: hiveserver2
+      IS_RESUME: "true"
+      SERVICE_OPTS: "-Dhive.metastore.uris=thrift://metastore:9083"
+    ports:
+      - "10000:10000"  # JDBC/Thrift 端口
+      - "10002:10002"  # Web UI 端口
+    volumes:
+      - hive-warehouse:/opt/hive/data/warehouse
+    networks:
+      - hive-net
+
+volumes:
+  postgres-data:
+  hive-warehouse:
+
+networks:
+  hive-net:
+    driver: bridge
